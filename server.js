@@ -66,8 +66,66 @@ const fortuneTypeMap = {
 // ========================================
 const GPT_TIMEOUT = 15000; // 15秒超时
 
+// 测试AI连接
+async function testAIConnection() {
+    if (!OPENAI_BASE_URL || !OPENAI_API_KEY) {
+        return { success: false, error: '未配置API' };
+    }
+    
+    return new Promise((resolve) => {
+        const data = JSON.stringify({
+            model: OPENAI_MODEL,
+            messages: [{ role: 'user', content: 'hi' }],
+            max_tokens: 5
+        });
+
+        const urlMatch = OPENAI_BASE_URL.match(/^(?:https?:\/\/)?([^:/]+)(?::(\d+))?/);
+        const hostname = urlMatch ? urlMatch[1] : 'api.openai.com';
+        const port = urlMatch && urlMatch[2] ? parseInt(urlMatch[2]) : (OPENAI_BASE_URL.startsWith('https') ? 443 : 80);
+        const isHttps = OPENAI_BASE_URL.startsWith('https');
+        
+        const options = {
+            hostname: hostname,
+            port: port,
+            path: '/v1/chat/completions',
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${OPENAI_API_KEY}`
+            },
+            timeout: 10000
+        };
+
+        const reqModule = isHttps ? https : http;
+        const req = reqModule.request(options, (res) => {
+            let body = '';
+            res.on('data', chunk => body += chunk);
+            res.on('end', () => {
+                try {
+                    const json = JSON.parse(body);
+                    if (json.error) {
+                        resolve({ success: false, error: json.error.message });
+                    } else if (json.choices) {
+                        resolve({ success: true, message: 'AI服务正常' });
+                    } else {
+                        resolve({ success: false, error: '响应格式异常' });
+                    }
+                } catch (e) {
+                    resolve({ success: false, error: e.message });
+                }
+            });
+        });
+
+        req.on('error', (e) => resolve({ success: false, error: e.message }));
+        req.on('timeout', () => { req.destroy(); resolve({ success: false, error: '连接超时' }); });
+        req.write(data);
+        req.end();
+    });
+}
+
 async function getAIInterpretation(fortune, userQuestion = '') {
-    if (!OPENAI_BASE_URL) {
+    if (!OPENAI_BASE_URL || !OPENAI_API_KEY) {
+        console.log('⚠️ AI配置不完整，跳过AI解签');
         return null;
     }
 
@@ -294,12 +352,14 @@ app.post('/api/ai-interpret', async (req, res) => {
     }
 });
 
-// 健康检查
-app.get('/health', (req, res) => {
+// 健康检查 + AI状态
+app.get('/health', async (req, res) => {
+    const aiStatus = await testAIConnection();
     res.json({
         status: 'ok',
         timestamp: new Date().toISOString(),
-        hasGPT: !!OPENAI_API_KEY,
+        hasGPT: aiStatus.success,
+        aiError: aiStatus.error || null,
         uptime: process.uptime()
     });
 });
