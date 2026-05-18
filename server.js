@@ -313,10 +313,46 @@ app.get('/', (req, res) => {
 // Telegram Bot 命令处理
 // ========================================
 let bot = null;
-try {
-    if (process.env.TELEGRAM_BOT_TOKEN) {
+
+function initBot() {
+    if (!process.env.TELEGRAM_BOT_TOKEN) {
+        console.log('⚠️ 未配置 Telegram Bot Token');
+        return;
+    }
+    
+    try {
         const TelegramBot = require('node-telegram-bot-api');
-        bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
+        bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, {
+            polling: {
+                interval: 1000,
+                autoStart: true,
+                params: { timeout: 60 }
+            },
+            filepath: false,
+            batchPolling: false
+        });
+        
+        // 错误处理
+        bot.on('polling_error', (error) => {
+            console.error('⚠️ Telegram Bot Polling错误:', error.message);
+            // 409错误表示有其他实例在运行，尝试清理
+            if (error.message.includes('409')) {
+                console.log('检测到冲突，尝试清理旧连接...');
+                try {
+                    bot.stopPolling();
+                    setTimeout(() => {
+                        console.log('重新启动Bot...');
+                        initBot();
+                    }, 5000);
+                } catch (e) {
+                    console.error('清理失败:', e.message);
+                }
+            }
+        });
+        
+        bot.on('error', (error) => {
+            console.error('⚠️ Telegram Bot错误:', error.message);
+        });
         
         // /start 命令
         bot.onText(/\/start/, (msg) => {
@@ -443,10 +479,14 @@ try {
         });
 
         console.log('🤖 Telegram Bot 已启动');
+        
+    } catch (e) {
+        console.log('⚠️ Telegram Bot 初始化失败:', e.message);
     }
-} catch (e) {
-    console.log('⚠️ Telegram Bot 初始化失败:', e.message);
 }
+
+// 初始化Bot
+initBot();
 
 // ========================================
 // 启动服务
