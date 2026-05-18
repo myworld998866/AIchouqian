@@ -6,9 +6,9 @@ require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || 'sk-5a01f0b335954cc650109a7b59d3144fa5a5465c4bbbb74090182f0e38ef09b2';
-const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
-const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4-turbo';
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || 'sk-f2eb1ff67798fdd3b7128cfd5caf366d8d7444d4108236b85150bb1ceacec234';
+const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL || 'http://69.5.20.196:8080';
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5.4';
 
 // ========================================
 // 中间件
