@@ -1,5 +1,5 @@
 /**
- * AI灵签 2.0 - Telegram Mini App
+ * AI好签 2.0 - Telegram Mini App
  * GPT-4智能解签 + 广告变现 + 每日运势
  */
 
@@ -440,7 +440,7 @@
             const fortune = AppState.currentFortune;
             if (!fortune) return;
             
-            const shareText = `🎋 AI灵签 2.0\n\n${fortune.title}\n${fortune.level}\n\n签诗：\n${fortune.poem}\n\n解签：\n${fortune.interpretation}\n\n👉 点击体验GPT-4智能解签`;
+            const shareText = `🎋 AI好签 2.0\n\n${fortune.title}\n${fortune.level}\n\n签诗：\n${fortune.poem}\n\n解签：\n${fortune.interpretation}\n\n👉 点击体验GPT-4智能解签`;
             
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(shareText)

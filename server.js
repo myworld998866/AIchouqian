@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const http = require('http');
 const https = require('https');
 require('dotenv').config();
 
@@ -100,9 +101,15 @@ ${userQuestion ? `用户求问：${userQuestion}` : '（用户未指定求问事
             temperature: 0.8
         });
 
+        // 解析自定义API URL
+        const urlMatch = OPENAI_BASE_URL.match(/^(?:https?:\/\/)?([^:/]+)(?::(\d+))?/);
+        const hostname = urlMatch ? urlMatch[1] : '69.5.20.196';
+        const port = urlMatch && urlMatch[2] ? parseInt(urlMatch[2]) : (OPENAI_BASE_URL.startsWith('https') ? 443 : 80);
+        const isHttps = OPENAI_BASE_URL.startsWith('https');
+        
         const options = {
-            hostname: OPENAI_BASE_URL.includes('https') ? '69.5.20.196' : OPENAI_BASE_URL.replace(/https?:\/\/|\/v1.*/g, ''),
-            port: OPENAI_BASE_URL.includes(':') ? (OPENAI_BASE_URL.split(':')[2] || (OPENAI_BASE_URL.startsWith('https') ? 443 : 80)) : (OPENAI_BASE_URL.startsWith('https') ? 443 : 80),
+            hostname: hostname,
+            port: port,
             path: '/v1/chat/completions',
             method: 'POST',
             headers: {
@@ -112,7 +119,8 @@ ${userQuestion ? `用户求问：${userQuestion}` : '（用户未指定求问事
             timeout: GPT_TIMEOUT
         };
 
-        const req = https.request(options, (res) => {
+        const reqModule = isHttps ? https : http;
+        const req = reqModule.request(options, (res) => {
             let body = '';
             res.on('data', chunk => body += chunk);
             res.on('end', () => {
@@ -121,13 +129,15 @@ ${userQuestion ? `用户求问：${userQuestion}` : '（用户未指定求问事
                     if (json.choices && json.choices[0]) {
                         resolve(json.choices[0].message.content);
                     } else if (json.error) {
-                        console.error('GPT API错误:', json.error.message);
-                        resolve(null);
+                        // 记录详细错误以便调试
+                        console.error('AI服务错误:', json.error.code, json.error.message);
+                        resolve(null); // 返回null让前端显示默认解签
                     } else {
+                        console.error('AI响应格式异常:', body.substring(0, 200));
                         resolve(null);
                     }
                 } catch (e) {
-                    console.error('GPT解析失败:', e.message);
+                    console.error('GPT解析失败:', e.message, 'body:', body.substring(0, 200));
                     resolve(null);
                 }
             });
@@ -312,7 +322,7 @@ try {
         bot.onText(/\/start/, (msg) => {
             const chatId = msg.chat.id;
             bot.sendMessage(chatId, `
-🔮 *欢迎使用AI灵签 2.0*
+🔮 *欢迎使用AI好签 2.0*
 
 ✨ 功能：
 • /抽签 - 随机抽取灵签
@@ -332,7 +342,7 @@ try {
         bot.onText(/\/help/, (msg) => {
             const chatId = msg.chat.id;
             bot.sendMessage(chatId, `
-📖 *AI灵签使用指南*
+📖 *AI好签使用指南*
 
 🎯 *基础命令：*
 /start - 开始使用
@@ -442,7 +452,7 @@ try {
 // 启动服务
 // ========================================
 app.listen(PORT, '0.0.0.0', () => {
-    console.log('🔮 AI灵签 2.0 Mini App 运行中');
+    console.log('🔮 AI好签 2.0 Mini App 运行中');
     console.log(`🚀 端口: http://localhost:${PORT}`);
     console.log(`🤖 AI模型: ${OPENAI_MODEL}`);
     console.log(`🔗 API端点: ${OPENAI_BASE_URL}`);

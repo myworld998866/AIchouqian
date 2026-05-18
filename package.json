@@ -1,7 +1,7 @@
 {
   "name": "newai-chouqian",
   "version": "2.0.0",
-  "description": "AI灵签 - GPT-4智能解签 + 广告变现 Telegram Mini App",
+  "description": "AI好签 - GPT-4智能解签 + 广告变现 Telegram Mini App",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

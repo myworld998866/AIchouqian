@@ -1,4 +1,4 @@
-# AI灵签 2.0 - GPT-4智能解签 Telegram Mini App
+# AI好签 2.0 - GPT-4智能解签 Telegram Mini App
 
 🎋 基于原项目重构，集成GPT-4智能解签、广告变现、每日运势等商业化功能。
 
