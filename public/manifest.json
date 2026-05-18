@@ -1,0 +1,13 @@
+{
+  "name": "AI灵签 2.0",
+  "description": "GPT-4智能解签 + 广告变现 Telegram Mini App",
+  "version": "2.0.0",
+  "icons": [
+    {
+      "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+      "sizes": "48x48"
+    }
+  ],
+  "background_color": "#1a0a0a",
+  "text_color": "#F5E6D3"
+}

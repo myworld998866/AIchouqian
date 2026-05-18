@@ -1,0 +1,780 @@
+/* ========================================
+   AI灵签 2.0 - 样式表
+   GPT-4智能解签 + 广告变现 + 每日运势
+   ======================================== */
+
+:root {
+    --primary: #8B4513;
+    --secondary: #D4AF37;
+    --accent: #C41E3A;
+    --bg: linear-gradient(135deg, #1a0a0a 0%, #2d1810 100%);
+    --text: #F5E6D3;
+    --card-bg: rgba(139, 69, 19, 0.3);
+    --gold: #D4AF37;
+    --premium: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    visibility: hidden;
+}
+
+.app-container {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 20px;
+    min-height: 100vh;
+    position: relative;
+}
+
+/* ========================================
+   Header
+   ======================================== */
+.app-header {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.app-header h1 {
+    font-size: 28px;
+    color: var(--gold);
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+.app-header h1 .version {
+    font-size: 12px;
+    background: var(--accent);
+    padding: 2px 8px;
+    border-radius: 10px;
+    vertical-align: super;
+}
+
+.app-header .subtitle {
+    font-size: 14px;
+    color: rgba(245, 230, 211, 0.7);
+    margin-top: 5px;
+}
+
+/* ========================================
+   🟡 P1: 每日运势卡片
+   ======================================== */
+.daily-card {
+    background: var(--card-bg);
+    border: 1px solid var(--gold);
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.daily-card.hidden {
+    display: none;
+}
+
+.daily-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.daily-date {
+    font-size: 14px;
+    color: rgba(245, 230, 211, 0.8);
+}
+
+.daily-rating {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.daily-rating.good {
+    color: #4ade80;
+}
+
+.daily-rating.normal {
+    color: var(--gold);
+}
+
+.daily-tip {
+    font-size: 13px;
+    color: rgba(245, 230, 211, 0.7);
+}
+
+/* ========================================
+   签种选择
+   ======================================== */
+.fortune-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.fortune-card {
+    background: var(--card-bg);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    border-radius: 12px;
+    padding: 15px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.fortune-card:hover {
+    border-color: var(--gold);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.fortune-card .icon {
+    font-size: 32px;
+    margin-bottom: 8px;
+}
+
+.fortune-card .name {
+    font-size: 16px;
+    font-weight: bold;
+    color: var(--gold);
+}
+
+.fortune-card .desc {
+    font-size: 12px;
+    color: rgba(245, 230, 211, 0.6);
+    margin-top: 5px;
+}
+
+/* 🟡 P1: Premium 签种标识 */
+.fortune-card.premium {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
+    border-color: rgba(102, 126, 234, 0.5);
+}
+
+.fortune-card.premium .name {
+    color: #a78bfa;
+}
+
+.premium-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: var(--premium);
+    color: white;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-weight: bold;
+}
+
+/* ========================================
+   摇签筒
+   ======================================== */
+.drawing-container {
+    text-align: center;
+    padding: 30px 0;
+}
+
+.shake-icon {
+    font-size: 48px;
+    margin-bottom: 20px;
+    animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.fortune-tube {
+    display: inline-block;
+    margin: 20px 0;
+}
+
+.tube-body {
+    width: 80px;
+    height: 120px;
+    background: linear-gradient(180deg, #8B4513 0%, #654321 100%);
+    border-radius: 10px 10px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid var(--gold);
+    position: relative;
+}
+
+.tube-ornament {
+    font-size: 20px;
+    position: absolute;
+    top: -15px;
+}
+
+.tube-stick {
+    font-size: 24px;
+}
+
+.drawing-container.shaking .tube-body {
+    animation: shake 0.5s infinite;
+}
+
+@keyframes shake {
+    0%, 100% { transform: rotate(-5deg); }
+    50% { transform: rotate(5deg); }
+}
+
+.prayer-text {
+    font-size: 14px;
+    color: rgba(245, 230, 211, 0.7);
+    margin: 15px 0;
+}
+
+.draw-btn {
+    background: linear-gradient(135deg, var(--accent) 0%, #8B0000 100%);
+    color: white;
+    border: none;
+    padding: 15px 40px;
+    font-size: 18px;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(196, 30, 58, 0.4);
+}
+
+.draw-btn:hover:not(:disabled) {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(196, 30, 58, 0.6);
+}
+
+.draw-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ========================================
+   🟴 P0: 广告界面
+   ======================================== */
+.ad-container {
+    text-align: center;
+    padding: 30px 0;
+}
+
+.ad-header {
+    margin-bottom: 20px;
+}
+
+.ad-label {
+    background: var(--card-bg);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+}
+
+.ad-placeholder {
+    background: #333;
+    border-radius: 12px;
+    padding: 40px;
+    margin-bottom: 20px;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.ad-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+}
+
+.ad-timer {
+    font-size: 36px;
+    color: var(--gold);
+    font-weight: bold;
+    margin-top: 15px;
+}
+
+.ad-btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    font-size: 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    margin: 5px;
+}
+
+.ad-btn:disabled {
+    background: #666;
+    cursor: not-allowed;
+}
+
+.skip-ad-btn {
+    background: transparent;
+    color: var(--gold);
+    border: 1px solid var(--gold);
+    padding: 12px 30px;
+    font-size: 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    margin: 5px;
+}
+
+/* ========================================
+   结果页面
+   ======================================== */
+.result-container {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.fortune-badge {
+    display: inline-block;
+    padding: 5px 20px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+
+.fortune-badge.level-upper {
+    background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
+    color: #1a0a0a;
+}
+
+.fortune-badge.level-mid {
+    background: linear-gradient(135deg, #c0c0c0 0%, #808080 100%);
+    color: #1a0a0a;
+}
+
+.fortune-badge.level-lower {
+    background: linear-gradient(135deg, #cd7f32 0%, #8B4513 100%);
+    color: white;
+}
+
+.fortune-title {
+    font-size: 20px;
+    color: var(--gold);
+    margin-bottom: 15px;
+}
+
+.fortune-poem {
+    background: var(--card-bg);
+    padding: 20px;
+    border-radius: 12px;
+    font-size: 16px;
+    line-height: 1.8;
+    white-space: pre-line;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    margin-bottom: 20px;
+}
+
+.fortune-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.action-btn {
+    padding: 12px 24px;
+    border-radius: 20px;
+    font-size: 14px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.interpret-btn {
+    background: linear-gradient(135deg, var(--accent) 0%, #8B0000 100%);
+    color: white;
+}
+
+.reshuffle-btn {
+    background: var(--card-bg);
+    color: var(--text);
+    border: 1px solid var(--gold);
+}
+
+.action-btn:hover {
+    transform: scale(1.05);
+}
+
+/* ========================================
+   解签页面
+   ======================================== */
+.interpretation-container {
+    padding: 20px 0;
+}
+
+.section-title {
+    font-size: 16px;
+    color: var(--gold);
+    margin: 20px 0 10px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ai-title {
+    color: #a78bfa;
+}
+
+.gpt-badge {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+.poem-box, .shi-yue-box, .xian-ji-box, .dian-gu-box, .interpretation-box {
+    background: var(--card-bg);
+    padding: 15px;
+    border-radius: 10px;
+    font-size: 14px;
+    line-height: 1.6;
+    border: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+/* 🟴 P0: AI解读框 */
+.ai-box {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
+    border: 1px solid rgba(102, 126, 234, 0.5);
+    padding: 15px;
+    border-radius: 10px;
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 10px;
+    min-height: 80px;
+}
+
+.ai-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 15px;
+    font-size: 14px;
+    cursor: pointer;
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.ai-btn:hover {
+    opacity: 0.9;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.share-btn {
+    background: #25D366;
+    color: white;
+    flex: 1;
+}
+
+.home-btn {
+    background: var(--card-bg);
+    color: var(--text);
+    border: 1px solid var(--gold);
+    flex: 1;
+}
+
+/* ========================================
+   Footer - 用户统计
+   ======================================== */
+.app-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(26, 10, 10, 0.95);
+    padding: 10px 20px;
+    border-top: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+.user-stats {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    font-size: 14px;
+}
+
+.stat-item {
+    color: rgba(245, 230, 211, 0.8);
+}
+
+.stat-item span {
+    color: var(--gold);
+    font-weight: bold;
+}
+
+/* ========================================
+   加载/提示
+   ======================================== */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    z-index: 1000;
+}
+
+.loading-overlay.active {
+    display: flex;
+}
+
+.loading-spinner {
+    font-size: 48px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.loading-overlay p {
+    margin-top: 15px;
+    font-size: 16px;
+}
+
+.toast {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 15px 30px;
+    border-radius: 10px;
+    z-index: 9999;
+    transition: all 0.3s ease;
+    font-size: 14px;
+}
+
+.toast.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.toast.show {
+    opacity: 1;
+}
+
+/* ========================================
+   🟢 P2: 新手引导
+   ======================================== */
+.guide-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.guide-overlay.hidden {
+    display: none;
+}
+
+.guide-content {
+    background: var(--card-bg);
+    border: 2px solid var(--gold);
+    border-radius: 20px;
+    padding: 30px;
+    text-align: center;
+    max-width: 320px;
+}
+
+.guide-step {
+    animation: fadeIn 0.3s ease;
+}
+
+.guide-step.hidden {
+    display: none;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.guide-icon {
+    font-size: 64px;
+    margin-bottom: 20px;
+}
+
+.guide-step h2 {
+    color: var(--gold);
+    font-size: 22px;
+    margin-bottom: 10px;
+}
+
+.guide-step p {
+    color: rgba(245, 230, 211, 0.7);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.guide-buttons {
+    margin-top: 25px;
+}
+
+.guide-btn {
+    background: linear-gradient(135deg, var(--accent) 0%, #8B0000 100%);
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    font-size: 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    width: 100%;
+}
+
+.guide-skip {
+    background: transparent;
+    color: rgba(245, 230, 211, 0.5);
+    border: none;
+    font-size: 12px;
+    cursor: pointer;
+    margin-top: 10px;
+    text-decoration: underline;
+}
+
+/* ========================================
+   🟢 P2: 新手礼包弹窗
+   ======================================== */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-content {
+    background: var(--card-bg);
+    border: 2px solid var(--gold);
+    border-radius: 20px;
+    padding: 30px;
+    text-align: center;
+    max-width: 320px;
+    animation: popIn 0.3s ease;
+}
+
+@keyframes popIn {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.gift-icon {
+    font-size: 64px;
+    margin-bottom: 15px;
+}
+
+.modal-content h2 {
+    color: var(--gold);
+    font-size: 22px;
+    margin-bottom: 10px;
+}
+
+.modal-content p {
+    color: rgba(245, 230, 211, 0.7);
+    font-size: 14px;
+}
+
+.gift-items {
+    margin: 20px 0;
+    text-align: left;
+}
+
+.gift-item {
+    background: rgba(212, 175, 55, 0.1);
+    padding: 12px 15px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+.gift-item strong {
+    color: var(--gold);
+}
+
+.claim-btn {
+    background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+    color: white;
+    border: none;
+    padding: 14px 40px;
+    font-size: 16px;
+    border-radius: 25px;
+    cursor: pointer;
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.close-gift {
+    background: transparent;
+    color: rgba(245, 230, 211, 0.5);
+    border: none;
+    font-size: 12px;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+/* ========================================
+   屏幕切换动画
+   ======================================== */
+.screen {
+    display: none;
+}
+
+.screen.active {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+/* ========================================
+   响应式
+   ======================================== */
+@media (max-width: 380px) {
+    .fortune-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .app-header h1 {
+        font-size: 24px;
+    }
+}

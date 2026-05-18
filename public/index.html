@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🔮 AI灵签 2.0 - GPT智能解签</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script>
+        if (window.Telegram?.WebApp) {
+            window.Telegram.WebApp.ready();
+        }
+    </script>
+    <style>
+        /* 隐藏加载界面 */
+        tg-splash-screen, .twa-splash-screen, div[class*="splash"] {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+        body { visibility: visible !important; }
+    </style>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- 🟢 P2: 新手引导遮罩 -->
+    <div id="guide-overlay" class="guide-overlay hidden">
+        <div class="guide-content">
+            <div class="guide-step" data-step="1">
+                <div class="guide-icon">🙏</div>
+                <h2>选择签种</h2>
+                <p>点击你想要的签种，开始诚心祈愿</p>
+            </div>
+            <div class="guide-step hidden" data-step="2">
+                <div class="guide-icon">🎲</div>
+                <h2>摇签筒</h2>
+                <p>诚心默念心中所求，点击摇签筒</p>
+            </div>
+            <div class="guide-step hidden" data-step="3">
+                <div class="guide-icon">🔮</div>
+                <h2>AI解签</h2>
+                <p>查看签诗，让GPT-4为你深度解读</p>
+            </div>
+            <div class="guide-buttons">
+                <button id="guide-next" class="guide-btn">下一步</button>
+                <button id="guide-skip" class="guide-skip">跳过引导</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🎁 P2: 新手礼包弹窗 -->
+    <div id="gift-modal" class="modal hidden">
+        <div class="modal-content gift-content">
+            <div class="gift-icon">🎁</div>
+            <h2>欢迎新用户!</h2>
+            <p>获得以下好礼：</p>
+            <div class="gift-items">
+                <div class="gift-item">🎋 <strong>3次</strong> 免费抽签</div>
+                <div class="gift-item">🔮 <strong>1次</strong> AI深度解签</div>
+                <div class="gift-item">📊 <strong>每日</strong> 运势追踪</div>
+            </div>
+            <button id="claim-gift" class="claim-btn">立即领取</button>
+            <button id="close-gift" class="close-gift">稍后再说</button>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <h1>🔮 AI灵签 <span class="version">2.0</span></h1>
+            <p class="subtitle">GPT-4 智能解签</p>
+        </header>
+
+        <!-- 每日运势卡片 🟡 P1 -->
+        <div id="daily-card" class="daily-card hidden">
+            <div class="daily-header">
+                <span class="daily-date" id="daily-date"></span>
+                <span class="daily-rating" id="daily-rating"></span>
+            </div>
+            <div class="daily-tip" id="daily-tip"></div>
+        </div>
+
+        <!-- Main Content -->
+        <main id="app-main">
+            <!-- Selection Screen -->
+            <section id="selection-screen" class="screen active">
+                <h2>选择签种</h2>
+                <div id="fortune-grid" class="fortune-grid"></div>
+            </section>
+
+            <!-- Drawing Screen -->
+            <section id="drawing-screen" class="screen">
+                <div class="drawing-container">
+                    <div class="shake-icon">🧘</div>
+                    <div class="fortune-tube" id="fortune-tube">
+                        <div class="tube-body">
+                            <div class="tube-ornament">⬆️</div>
+                            <div class="tube-stick" id="tube-stick">📜</div>
+                        </div>
+                    </div>
+                    <p class="prayer-text">请诚心默念所求之事</p>
+                    <button id="draw-btn" class="draw-btn">🙏 摇签筒</button>
+                </div>
+            </section>
+
+            <!-- Ad Screen 🟴 P0: 广告系统 -->
+            <section id="ad-screen" class="screen">
+                <div class="ad-container">
+                    <div class="ad-header">
+                        <span class="ad-label">📢 看广告解锁完整解签</span>
+                    </div>
+                    <div class="ad-placeholder" id="ad-placeholder">
+                        <div class="ad-icon">🎬</div>
+                        <p>正在加载广告...</p>
+                        <div id="ad-timer" class="ad-timer">5s</div>
+                    </div>
+                    <div class="ad-actions">
+                        <button id="watch-ad" class="ad-btn">观看广告 (5秒)</button>
+                        <button id="skip-ad" class="skip-ad-btn">跳过 (使用积分)</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Result Screen -->
+            <section id="result-screen" class="screen">
+                <div class="result-container">
+                    <div class="fortune-badge" id="fortune-level"></div>
+                    <h3 class="fortune-title" id="fortune-title"></h3>
+                    <div class="fortune-poem" id="fortune-poem"></div>
+                    <div class="fortune-actions">
+                        <button id="interpret-btn" class="action-btn interpret-btn">🔮 解签</button>
+                        <button id="reshuffle-btn" class="action-btn reshuffle-btn">🔄 重新抽签</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Interpretation Screen -->
+            <section id="interpretation-screen" class="screen">
+                <div class="interpretation-container">
+                    <!-- 基础解签 -->
+                    <h3 class="section-title">📜 签诗</h3>
+                    <div class="poem-box" id="inter-poem"></div>
+                    
+                    <h3 class="section-title">🏷️ 诗曰</h3>
+                    <div class="shi-yue-box" id="inter-shi-yue"></div>
+                    
+                    <h3 class="section-title">⚙️ 仙机</h3>
+                    <div class="xian-ji-box" id="inter-xian-ji"></div>
+                    
+                    <h3 class="section-title">📖 典故</h3>
+                    <div class="dian-gu-box" id="inter-dian-gu"></div>
+                    
+                    <!-- 🟴 P0: GPT-4 AI 解签 -->
+                    <div id="ai-interpretation-section">
+                        <h3 class="section-title ai-title">🤖 AI深度解读 <span class="gpt-badge">GPT-4</span></h3>
+                        <div class="ai-box" id="inter-ai"></div>
+                        <button id="ai-interpret-btn" class="ai-btn">🔮 AI解签 (消耗1次)</button>
+                    </div>
+                    
+                    <h3 class="section-title">💡 解签</h3>
+                    <div class="interpretation-box" id="inter-interpretation"></div>
+                    
+                    <div class="action-buttons">
+                        <button id="share-btn" class="action-btn share-btn">📤 分享</button>
+                        <button id="back-home-btn" class="action-btn home-btn">🏠 再抽一支</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- 积分/次数显示 🟡 P1 -->
+        <footer class="app-footer">
+            <div class="user-stats">
+                <span class="stat-item">🎋 抽签: <span id="free-draws">3</span>次</span>
+                <span class="stat-item">🔮 AI: <span id="ai-uses">1</span>次</span>
+            </div>
+        </footer>
+
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="loading-overlay">
+            <div class="loading-spinner">🌀</div>
+            <p>诚心抽取中...</p>
+        </div>
+
+        <!-- Toast提示 -->
+        <div id="toast" class="toast hidden"></div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
