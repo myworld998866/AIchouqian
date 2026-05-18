@@ -502,6 +502,99 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// 管理后台入口
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+// ========================================
+// 用户积分管理 API
+// ========================================
+
+// 简单的内存存储（生产环境应使用数据库）
+const userCredits = new Map();
+
+// 初始化默认积分
+function getUserCredits(userId) {
+    if (!userCredits.has(userId)) {
+        userCredits.set(userId, {
+            freeDraws: 3,
+            aiUses: 1,
+            totalDraws: 0
+        });
+    }
+    return userCredits.get(userId);
+}
+
+// 获取用户积分
+app.get('/api/credits/:userId', (req, res) => {
+    const userId = req.params.userId;
+    const credits = getUserCredits(userId);
+    res.json({
+        success: true,
+        userId: userId,
+        credits: credits
+    });
+});
+
+// 管理员设置用户积分 (通过查询参数)
+app.post('/api/credits/:userId', (req, res) => {
+    const userId = req.params.userId;
+    const { freeDraws, aiUses, action, adminKey } = req.body;
+    
+    // 简单的管理员验证（生产环境需要更安全的验证）
+    const ADMIN_KEY = process.env.ADMIN_KEY || 'admin123';
+    if (adminKey !== ADMIN_KEY) {
+        return res.status(403).json({ error: '无权限', code: 'FORBIDDEN' });
+    }
+    
+    const credits = getUserCredits(userId);
+    
+    if (action === 'add') {
+        // 增加积分
+        if (typeof freeDraws === 'number') credits.freeDraws += freeDraws;
+        if (typeof aiUses === 'number') credits.aiUses += aiUses;
+        res.json({
+            success: true,
+            message: '积分已增加',
+            credits: credits
+        });
+    } else if (action === 'set') {
+        // 设置积分
+        if (typeof freeDraws === 'number') credits.freeDraws = freeDraws;
+        if (typeof aiUses === 'number') credits.aiUses = aiUses;
+        res.json({
+            success: true,
+            message: '积分已设置',
+            credits: credits
+        });
+    } else if (action === 'reset') {
+        // 重置为默认值
+        credits.freeDraws = 3;
+        credits.aiUses = 1;
+        res.json({
+            success: true,
+            message: '积分已重置',
+            credits: credits
+        });
+    } else if (action === 'deduct') {
+        // 扣减积分
+        if (typeof freeDraws === 'number' && credits.freeDraws >= freeDraws) {
+            credits.freeDraws -= freeDraws;
+        }
+        if (typeof aiUses === 'number' && credits.aiUses >= aiUses) {
+            credits.aiUses -= aiUses;
+        }
+        res.json({
+            success: true,
+            message: '积分已扣减',
+            credits: credits
+        });
+    } else {
+        res.status(400).json({ error: '未知操作', code: 'INVALID_ACTION' });
+    }
+});
+
 // ========================================
 // Telegram Bot 命令处理
 // ========================================
