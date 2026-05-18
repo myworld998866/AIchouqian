@@ -191,11 +191,11 @@ ${userQuestion ? `用户求问：${userQuestion}` : '（用户未指定求问事
                         console.error('AI服务错误:', json.error.code, json.error.message);
                         resolve(null); // 返回null让前端显示默认解签
                     } else {
-                        console.error('AI响应格式异常:', body.substring(0, 200));
+                        console.error('AI响应格式异常, body:', body.substring(0, 500));
                         resolve(null);
                     }
                 } catch (e) {
-                    console.error('GPT解析失败:', e.message, 'body:', body.substring(0, 200));
+                    console.error('GPT解析失败:', e.message, 'rawBody:', body.substring(0, 500));
                     resolve(null);
                 }
             });
