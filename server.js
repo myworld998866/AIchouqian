@@ -80,8 +80,8 @@ async function testAIConnection() {
         });
 
         const urlMatch = OPENAI_BASE_URL.match(/^(?:https?:\/\/)?([^:/]+)(?::(\d+))?/);
-        const hostname = urlMatch ? urlMatch[1] : 'api.openai.com';
-        const port = urlMatch && urlMatch[2] ? parseInt(urlMatch[2]) : (OPENAI_BASE_URL.startsWith('https') ? 443 : 80);
+        const hostname = urlMatch ? urlMatch[1] : '69.5.20.196';
+        const port = urlMatch && urlMatch[2] ? parseInt(urlMatch[2]) : 8080;
         const isHttps = OPENAI_BASE_URL.startsWith('https');
         
         const options = {
