@@ -444,6 +444,59 @@ app.get('/health', async (req, res) => {
     });
 });
 
+// AI测试端点
+app.get('/api/test-ai', async (req, res) => {
+    console.log('[TestAI] 开始测试');
+    console.log('[TestAI] OPENAI_API_KEY:', OPENAI_API_KEY ? '已配置' : '未配置');
+    console.log('[TestAI] OPENAI_BASE_URL:', OPENAI_BASE_URL);
+    console.log('[TestAI] OPENAI_MODEL:', OPENAI_MODEL);
+    
+    const urlMatch = OPENAI_BASE_URL.match(/^(?:https?:\/\/)?([^:/]+)(?::(\d+))?/);
+    const hostname = urlMatch ? urlMatch[1] : '69.5.20.196';
+    const port = urlMatch && urlMatch[2] ? parseInt(urlMatch[2]) : 8080;
+    console.log('[TestAI] 解析结果 - hostname:', hostname, 'port:', port);
+    
+    const data = JSON.stringify({
+        model: OPENAI_MODEL,
+        messages: [{ role: 'user', content: 'hi' }],
+        max_tokens: 5
+    });
+    
+    const options = {
+        hostname: hostname,
+        port: port,
+        path: '/v1/chat/completions',
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + OPENAI_API_KEY
+        },
+        timeout: 10000
+    };
+    
+    const httpModule = OPENAI_BASE_URL.startsWith('https') ? https : http;
+    const aiReq = httpModule.request(options, (aiRes) => {
+        let body = '';
+        aiRes.on('data', chunk => body += chunk);
+        aiRes.on('end', () => {
+            console.log('[TestAI] 响应状态:', aiRes.statusCode);
+            console.log('[TestAI] body:', body.substring(0, 500));
+            res.json({
+                status: aiRes.statusCode,
+                body: body.substring(0, 1000)
+            });
+        });
+    });
+    
+    aiReq.on('error', (e) => {
+        console.error('[TestAI] 错误:', e.message);
+        res.json({ error: e.message });
+    });
+    
+    aiReq.write(data);
+    aiReq.end();
+});
+
 // Mini App 入口
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
