@@ -4,26 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>🔮 AI灵签 2.0 - GPT智能解签</title>
+    <meta name="description" content="融合东方玄学与AI智慧，GPT-4智能解签，Telegram抽签Mini App">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script>
+        // 立即隐藏 Telegram 加载界面
         if (window.Telegram?.WebApp) {
             window.Telegram.WebApp.ready();
         }
     </script>
     <style>
-        /* 隐藏加载界面 */
-        tg-splash-screen, .twa-splash-screen, div[class*="splash"] {
+        /* 紧急隐藏 Telegram splash 屏幕 */
+        tg-splash-screen,
+        .twa-splash-screen,
+        div[class*="splash"],
+        div[id*="splash"] {
             display: none !important;
             visibility: hidden !important;
             opacity: 0 !important;
             pointer-events: none !important;
         }
-        body { visibility: visible !important; }
+        body {
+            visibility: visible !important;
+        }
     </style>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- 🟢 P2: 新手引导遮罩 -->
+    <!-- ========================================
+         新手引导遮罩
+         ======================================== -->
     <div id="guide-overlay" class="guide-overlay hidden">
         <div class="guide-content">
             <div class="guide-step" data-step="1">
@@ -48,7 +57,9 @@
         </div>
     </div>
 
-    <!-- 🎁 P2: 新手礼包弹窗 -->
+    <!-- ========================================
+         新手礼包弹窗
+         ======================================== -->
     <div id="gift-modal" class="modal hidden">
         <div class="modal-content gift-content">
             <div class="gift-icon">🎁</div>
@@ -64,6 +75,9 @@
         </div>
     </div>
 
+    <!-- ========================================
+         主应用容器
+         ======================================== -->
     <div class="app-container">
         <!-- Header -->
         <header class="app-header">
@@ -71,7 +85,7 @@
             <p class="subtitle">GPT-4 智能解签</p>
         </header>
 
-        <!-- 每日运势卡片 🟡 P1 -->
+        <!-- 每日运势卡片 -->
         <div id="daily-card" class="daily-card hidden">
             <div class="daily-header">
                 <span class="daily-date" id="daily-date"></span>
@@ -82,13 +96,15 @@
 
         <!-- Main Content -->
         <main id="app-main">
-            <!-- Selection Screen -->
+            <!-- 签种选择 -->
             <section id="selection-screen" class="screen active">
                 <h2>选择签种</h2>
-                <div id="fortune-grid" class="fortune-grid"></div>
+                <div id="fortune-grid" class="fortune-grid">
+                    <!-- 签种卡片由JS渲染 -->
+                </div>
             </section>
 
-            <!-- Drawing Screen -->
+            <!-- 摇签筒 -->
             <section id="drawing-screen" class="screen">
                 <div class="drawing-container">
                     <div class="shake-icon">🧘</div>
@@ -103,7 +119,7 @@
                 </div>
             </section>
 
-            <!-- Ad Screen 🟴 P0: 广告系统 -->
+            <!-- 广告界面 -->
             <section id="ad-screen" class="screen">
                 <div class="ad-container">
                     <div class="ad-header">
@@ -121,7 +137,7 @@
                 </div>
             </section>
 
-            <!-- Result Screen -->
+            <!-- 抽签结果 -->
             <section id="result-screen" class="screen">
                 <div class="result-container">
                     <div class="fortune-badge" id="fortune-level"></div>
@@ -134,10 +150,9 @@
                 </div>
             </section>
 
-            <!-- Interpretation Screen -->
+            <!-- 解签页面 -->
             <section id="interpretation-screen" class="screen">
                 <div class="interpretation-container">
-                    <!-- 基础解签 -->
                     <h3 class="section-title">📜 签诗</h3>
                     <div class="poem-box" id="inter-poem"></div>
                     
@@ -150,9 +165,11 @@
                     <h3 class="section-title">📖 典故</h3>
                     <div class="dian-gu-box" id="inter-dian-gu"></div>
                     
-                    <!-- 🟴 P0: GPT-4 AI 解签 -->
+                    <!-- GPT-4 AI 解签 -->
                     <div id="ai-interpretation-section">
-                        <h3 class="section-title ai-title">🤖 AI深度解读 <span class="gpt-badge">GPT-4</span></h3>
+                        <h3 class="section-title ai-title">
+                            🤖 AI深度解读 <span class="gpt-badge">GPT-4</span>
+                        </h3>
                         <div class="ai-box" id="inter-ai"></div>
                         <button id="ai-interpret-btn" class="ai-btn">🔮 AI解签 (消耗1次)</button>
                     </div>
@@ -168,23 +185,23 @@
             </section>
         </main>
 
-        <!-- 积分/次数显示 🟡 P1 -->
+        <!-- Footer - 用户统计 -->
         <footer class="app-footer">
             <div class="user-stats">
                 <span class="stat-item">🎋 抽签: <span id="free-draws">3</span>次</span>
                 <span class="stat-item">🔮 AI: <span id="ai-uses">1</span>次</span>
             </div>
         </footer>
-
-        <!-- Loading Overlay -->
-        <div id="loading-overlay" class="loading-overlay">
-            <div class="loading-spinner">🌀</div>
-            <p>诚心抽取中...</p>
-        </div>
-
-        <!-- Toast提示 -->
-        <div id="toast" class="toast hidden"></div>
     </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-spinner">🌀</div>
+        <p>诚心抽取中...</p>
+    </div>
+
+    <!-- Toast提示 -->
+    <div id="toast" class="toast hidden"></div>
 
     <script src="app.js"></script>
 </body>
