@@ -148,7 +148,7 @@ ${userQuestion ? `用户求问：${userQuestion}` : '（用户未指定求问事
 
 用温柔、鼓励的语气，控制在200字以内。`;
 
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         const data = JSON.stringify({
             model: OPENAI_MODEL,
             messages: [
@@ -162,7 +162,84 @@ ${userQuestion ? `用户求问：${userQuestion}` : '（用户未指定求问事
         // 解析自定义API URL
         const urlMatch = OPENAI_BASE_URL.match(/^(?:https?:\/\/)?([^:/]+)(?::(\d+))?/);
         const hostname = urlMatch ? urlMatch[1] : '69.5.20.196';
-        const port = urlMatch && urlMatch[2] ? parseInt(urlMatch[2]) : (OPENAI_BASE_URL.startsWith('https') ? 443 : 80);
+        const port = urlMatch && urlMatch[2] ? parseInt(urlMatch[2]) : 8080;
+        const isHttps = OPENAI_BASE_URL.startsWith('https');
+        
+        console.log('[AI解签] 发起请求:', { hostname, port, isHttps, model: OPENAI_MODEL });
+        
+        const options = {
+            hostname: hostname,
+            port: port,
+            path: '/v1/chat/completions',
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json; charset=utf-8',
+                'Authorization': `Bearer ${OPENAI_API_KEY}`
+            },
+            timeout: 20000
+        };
+
+        const reqModule = isHttps ? https : http;
+        const req = reqModule.request(options, (res) => {
+            let body = '';
+            res.on('data', chunk => body += chunk);
+            res.on('end', () => {
+                console.log('[AI解签] 响应状态:', res.statusCode, 'body长度:', body.length);
+                try {
+                    const json = JSON.parse(body);
+                    if (json.choices && json.choices[0] && json.choices[0].message) {
+                        console.log('[AI解签] 成功!');
+                        resolve(json.choices[0].message.content);
+                    } else if (json.error) {
+                        console.error('[AI解签] API错误:', json.error.code, json.error.message);
+                        resolve(null);
+                    } else {
+                        console.error('[AI解签] 未知响应格式, body:', body.substring(0, 500));
+                        resolve(null);
+                    }
+                } catch (e) {
+                    console.error('[AI解签] JSON解析失败:', e.message, 'body:', body.substring(0, 500));
+                    resolve(null);
+                }
+            });
+        });
+
+        req.on('error', (e) => {
+            console.error('[AI解签] 请求错误:', e.message);
+            resolve(null);
+        });
+
+        req.on('timeout', () => {
+            req.destroy();
+            console.error('[AI解签] 请求超时');
+            resolve(null);
+        });
+
+        req.write(data);
+        req.end();
+    });
+}
+
+// 备用简化版AI调用（用于调试）
+async function simpleAIRequest(prompt) {
+    if (!OPENAI_BASE_URL || !OPENAI_API_KEY) {
+        return null;
+    }
+    
+    return new Promise((resolve) => {
+        const data = JSON.stringify({
+            model: OPENAI_MODEL,
+            messages: [
+                { role: 'system', content: '你是一位慈悲、智慧且幽默的东方玄学解签大师。' },
+                { role: 'user', content: prompt }
+            ],
+            max_tokens: 300,
+            temperature: 0.8
+        });
+
+        const urlMatch = OPENAI_BASE_URL.match(/^(?:https?:\/\/)?([^:/]+)(?::(\d+))?/);
+        const hostname = urlMatch ? urlMatch[1] : '69.5.20.196';
+        const port = urlMatch && urlMatch[2] ? parseInt(urlMatch[2]) : 8080;
         const isHttps = OPENAI_BASE_URL.startsWith('https');
         
         const options = {
@@ -171,10 +248,10 @@ ${userQuestion ? `用户求问：${userQuestion}` : '（用户未指定求问事
             path: '/v1/chat/completions',
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/json; charset=utf-8',
                 'Authorization': `Bearer ${OPENAI_API_KEY}`
             },
-            timeout: GPT_TIMEOUT
+            timeout: 20000
         };
 
         const reqModule = isHttps ? https : http;
@@ -182,33 +259,36 @@ ${userQuestion ? `用户求问：${userQuestion}` : '（用户未指定求问事
             let body = '';
             res.on('data', chunk => body += chunk);
             res.on('end', () => {
+                console.log('[SimpleAI] Status:', res.statusCode, 'Body len:', body.length);
                 try {
                     const json = JSON.parse(body);
-                    if (json.choices && json.choices[0]) {
+                    // 检查各种可能的成功响应格式
+                    if (json.choices && json.choices[0] && json.choices[0].message) {
                         resolve(json.choices[0].message.content);
+                    } else if (json.output || json.text) {
+                        resolve(json.output || json.text);
                     } else if (json.error) {
-                        // 记录详细错误以便调试
-                        console.error('AI服务错误:', json.error.code, json.error.message);
-                        resolve(null); // 返回null让前端显示默认解签
+                        console.error('[SimpleAI] 错误:', json.error.message);
+                        resolve(null);
                     } else {
-                        console.error('AI响应格式异常, body:', body.substring(0, 500));
+                        console.error('[SimpleAI] 未知格式, body:', body.substring(0, 300));
                         resolve(null);
                     }
                 } catch (e) {
-                    console.error('GPT解析失败:', e.message, 'rawBody:', body.substring(0, 500));
+                    console.error('[SimpleAI] 解析失败:', e.message, 'body:', body.substring(0, 300));
                     resolve(null);
                 }
             });
         });
 
         req.on('error', (e) => {
-            console.error('GPT请求失败:', e.message);
+            console.error('[SimpleAI] 请求错误:', e.message);
             resolve(null);
         });
 
         req.on('timeout', () => {
             req.destroy();
-            console.error('GPT请求超时');
+            console.error('[SimpleAI] 超时');
             resolve(null);
         });
 
