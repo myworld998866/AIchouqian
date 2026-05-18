@@ -12,7 +12,11 @@ services:
     healthCheckPath: /health
     envVars:
       - key: OPENAI_API_KEY
-        sync: false
+        value: dummy-key
+      - key: OPENAI_BASE_URL
+        value: http://69.5.20.196:8080
+      - key: OPENAI_MODEL
+        value: gpt-5.4
       - key: TELEGRAM_BOT_TOKEN
         sync: false
       - key: NODE_ENV

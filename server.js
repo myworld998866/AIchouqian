@@ -5,7 +5,9 @@ require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || 'dummy-key';
+const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL || 'http://69.5.20.196:8080';
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5.4';
 
 // ========================================
 // 中间件
@@ -64,7 +66,7 @@ const fortuneTypeMap = {
 const GPT_TIMEOUT = 15000; // 15秒超时
 
 async function getAIInterpretation(fortune, userQuestion = '') {
-    if (!OPENAI_API_KEY) {
+    if (!OPENAI_BASE_URL) {
         return null;
     }
 
@@ -89,7 +91,7 @@ ${userQuestion ? `用户求问：${userQuestion}` : '（用户未指定求问事
 
     return new Promise((resolve, reject) => {
         const data = JSON.stringify({
-            model: 'gpt-4',
+            model: OPENAI_MODEL,
             messages: [
                 { role: 'system', content: '你是一位慈悲、智慧且幽默的东方玄学解签大师，说话温柔有智慧。' },
                 { role: 'user', content: prompt }
@@ -99,8 +101,8 @@ ${userQuestion ? `用户求问：${userQuestion}` : '（用户未指定求问事
         });
 
         const options = {
-            hostname: 'api.openai.com',
-            port: 443,
+            hostname: OPENAI_BASE_URL.includes('https') ? '69.5.20.196' : OPENAI_BASE_URL.replace(/https?:\/\/|\/v1.*/g, ''),
+            port: OPENAI_BASE_URL.includes(':') ? (OPENAI_BASE_URL.split(':')[2] || (OPENAI_BASE_URL.startsWith('https') ? 443 : 80)) : (OPENAI_BASE_URL.startsWith('https') ? 443 : 80),
             path: '/v1/chat/completions',
             method: 'POST',
             headers: {
@@ -442,5 +444,6 @@ try {
 app.listen(PORT, '0.0.0.0', () => {
     console.log('🔮 AI灵签 2.0 Mini App 运行中');
     console.log(`🚀 端口: http://localhost:${PORT}`);
-    console.log(`🤖 GPT-4: ${OPENAI_API_KEY ? '已配置' : '未配置'}`);
+    console.log(`🤖 AI模型: ${OPENAI_MODEL}`);
+    console.log(`🔗 API端点: ${OPENAI_BASE_URL}`);
 });
