@@ -123,10 +123,57 @@ async function testAIConnection() {
     });
 }
 
+// 内置智能解签函数（当外部API不可用时使用）
+function getBuiltinInterpretation(fortune) {
+    const levelEmoji = {
+        '上上': '🌟✨', '上吉': '✨🌟', '吉': '🌟', '中吉': '👍✨', 
+        '中平': '👍', '中': '👍', '平': '⚖️', '下下': '⚠️'
+    };
+    
+    const levelAdvice = {
+        '上上': '运势极佳！把握时机，勇往直前，会有意外惊喜。',
+        '上吉': '运势很好，贵人多助，适合进取。',
+        '吉': '运势顺畅，稳扎稳打，有望达成心愿。',
+        '中吉': '运势平稳，循序渐进，耐心等待时机。',
+        '中平': '运势一般，顺其自然，不宜强求。',
+        '中': '运势平稳，保守行事，随遇而安。',
+        '平': '运势平淡，保持平常心，静待时机。',
+        '下下': '运势低迷，宜守不宜动，谨慎行事。'
+    };
+    
+    const fortuneTypeAdvice = {
+        'guanyin': '观音菩萨慈悲为怀，会指引你找到答案。',
+        'guandi': '关帝爷忠诚正义，会护佑你渡过难关。',
+        'yuelao': '月老红线牵引，有缘人自会相遇。',
+        'tumigong': '土地公护佑一方，风调雨顺，平安吉祥。',
+        'huangdaxian': '黄大仙指点迷津，趋吉避凶，化险为夷。',
+        'wenchang': '文昌帝君庇佑，学业进步，金榜题名。',
+        'caishen': '财神眷顾，财源广进，金玉满堂。',
+        'taishui': '太岁年宜静不宜动，化解冲煞，平安度过。'
+    };
+    
+    const emoji = levelEmoji[fortune.level] || '🌟';
+    const advice = levelAdvice[fortune.level] || levelAdvice['中平'];
+    const typeAdvice = fortuneTypeAdvice[fortune.type] || '神明庇佑。';
+    
+    // 生成3个行动指引
+    const actions = {
+        '上上': ['今天适合做重大决定', '这周可以主动出击', '这个月把握机会大展拳脚'],
+        '上吉': ['今天运势正旺', '这周适合洽谈合作', '这个月财运事业双丰收'],
+        '吉': ['今天适合稳步推进', '这周保持好节奏', '这个月有贵人相助'],
+        '中吉': ['今天稳扎稳打', '这周继续努力', '这个月收获可期'],
+        '中平': ['今天保持平常心', '这周不宜冒进', '这个月静待时机'],
+        '下下': ['今天宜静不宜动', '这周谨慎行事', '这个月低调积累']
+    };
+    const levelActions = actions[fortune.level] || actions['中平'];
+    
+    return `🎋 ${fortune.title}\n\n签级：${fortune.level} ${emoji}\n\n📜 签诗：\n${fortune.poem}\n\n💡 智能解读：\n${fortune.interpretation}\n\n🙏 ${typeAdvice}\n\n🌈 综合建议：${advice}\n\n📋 行动指引：\n• ${levelActions[0]}\n• ${levelActions[1]}\n• ${levelActions[2]}\n\n✨ 记住：心诚则灵，积极行动，命运掌握在自己手中！`;
+}
+
 async function getAIInterpretation(fortune, userQuestion = '') {
     if (!OPENAI_BASE_URL || !OPENAI_API_KEY) {
-        console.log('⚠️ AI配置不完整，跳过AI解签');
-        return null;
+        console.log('⚠️ AI配置不完整，使用内置解签');
+        return getBuiltinInterpretation(fortune);
     }
 
     const prompt = `你是一位精通东方玄学的AI解签大师。用户抽到了以下签诗：
@@ -192,27 +239,32 @@ ${userQuestion ? `用户求问：${userQuestion}` : '（用户未指定求问事
                         resolve(json.choices[0].message.content);
                     } else if (json.error) {
                         console.error('[AI解签] API错误:', json.error.code, json.error.message);
-                        resolve(null);
+                        // API错误时使用内置解签
+                        resolve(getBuiltinInterpretation(fortune));
                     } else {
                         console.error('[AI解签] 未知响应格式, body:', body.substring(0, 500));
-                        resolve(null);
+                        // 未知格式时使用内置解签
+                        resolve(getBuiltinInterpretation(fortune));
                     }
                 } catch (e) {
                     console.error('[AI解签] JSON解析失败:', e.message, 'body:', body.substring(0, 500));
-                    resolve(null);
+                    // 解析错误时使用内置解签
+                    resolve(getBuiltinInterpretation(fortune));
                 }
             });
         });
 
         req.on('error', (e) => {
             console.error('[AI解签] 请求错误:', e.message);
-            resolve(null);
+            // 网络错误时使用内置解签
+            resolve(getBuiltinInterpretation(fortune));
         });
 
         req.on('timeout', () => {
             req.destroy();
             console.error('[AI解签] 请求超时');
-            resolve(null);
+            // 超时时使用内置解签
+            resolve(getBuiltinInterpretation(fortune));
         });
 
         req.write(data);
