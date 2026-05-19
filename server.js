@@ -2,12 +2,19 @@ const express = require('express');
 const path = require('path');
 const http = require('http');
 const https = require('https');
+const fs = require('fs');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || 'sk-f2eb1ff67798fdd3b7128cfd5caf366d8d7444d4108236b85150bb1ceacec234';
-const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL || 'http://69.5.20.196:8080';
+
+// MiniMax API 配置
+const MINIMAX_API_KEY = process.env.MINIMAX_API_KEY || '';
+const MINIMAX_API_URL = 'https://api.minimax.io/v1/text/chatcompletion_v2';
+
+// 保留旧的 OpenAI 配置作为备用
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
+const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL || '';
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5.4';
 
 // ========================================
@@ -62,7 +69,96 @@ const fortuneTypeMap = {
 };
 
 // ========================================
-// GPT-4 AI 解签服务
+// MiniMax AI 解签功能
+// ========================================
+
+// 签种名称映射
+const fortuneTypeNames = {
+    'guanyin': '观音灵签',
+    'guandi': '关帝灵签',
+    'yuelao': '月老灵签',
+    'tumigong': '土地公灵签',
+    'huangdaxian': '黄大仙灵签',
+    'wenchang': '文昌签',
+    'caishen': '财神签',
+    'taishui': '太岁签'
+};
+
+async function getMiniMaxInterpretation(fortune, userQuestion = '') {
+    if (!MINIMAX_API_KEY) {
+        console.log('[AI解签] 未配置 MiniMax API Key');
+        return null;
+    }
+
+    const typeName = fortuneTypeNames[fortune.type] || fortune.type;
+
+    const prompt = `你是东方玄学大师，擅长解签。请为以下${typeName}进行详细解读：
+
+签号：第${fortune.index}签
+签名：${fortune.title}
+签级：${fortune.level}
+签诗：${fortune.poem}
+${fortune.shiYue ? `诗曰：${fortune.shiYue}` : ''}
+${fortune.xianJi ? `仙机：${fortune.xianJi}` : ''}
+${fortune.dianGu ? `典故：${fortune.dianGu}` : ''}
+${userQuestion ? `用户求问：${userQuestion}` : ''}
+
+请从以下几个方面进行解读（输出JSON格式）：
+{
+  "interpretation": "详细解签（300-500字，涵盖事业、感情、财运、健康等方面）",
+  "shiYue": "诗曰内容（简洁的运势描述）",
+  "xianJi": "仙机内容（行动指引）",
+  "dianGu": "典故内容（历史典故或故事背景）"
+}`;
+
+    try {
+        const response = await fetch(MINIMAX_API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${MINIMAX_API_KEY}`
+            },
+            body: JSON.stringify({
+                model: 'MiniMax-M2.7',
+                tokens_to_generate: 1024,
+                temperature: 0.7,
+                messages: [
+                    {
+                        role: 'user',
+                        content: prompt
+                    }
+                ]
+            })
+        });
+
+        if (!response.ok) {
+            console.error('[AI解签] MiniMax API error:', response.status);
+            return null;
+        }
+
+        const data = await response.json();
+        
+        // 解析响应
+        const content = data.choices?.[0]?.messages?.[0]?.text || 
+                        data.choices?.[0]?.messages?.[0]?.content;
+
+        if (content) {
+            const jsonMatch = content.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                console.log('[AI解签] MiniMax 解签成功');
+                return JSON.parse(jsonMatch[0]);
+            }
+        }
+
+        return null;
+    } catch (error) {
+        console.error('[AI解签] MiniMax API error:', error);
+        return null;
+    }
+}
+
+// ========================================
+// GPT-4 AI 解签服务（备用）
 // ========================================
 const GPT_TIMEOUT = 15000; // 15秒超时
 
@@ -171,11 +267,49 @@ function getBuiltinInterpretation(fortune) {
 }
 
 async function getAIInterpretation(fortune, userQuestion = '') {
-    if (!OPENAI_BASE_URL || !OPENAI_API_KEY) {
-        console.log('⚠️ AI配置不完整，使用内置解签');
-        return getBuiltinInterpretation(fortune);
+    // 优先使用 MiniMax API
+    if (MINIMAX_API_KEY) {
+        const miniMaxResult = await getMiniMaxInterpretation(fortune, userQuestion);
+        if (miniMaxResult) {
+            // 格式化 MiniMax 结果
+            const levelEmoji = {
+                '上上': '🌟✨', '上吉': '✨🌟', '吉': '🌟', '中吉': '👍✨', 
+                '中平': '👍', '中': '👍', '平': '⚖️', '下下': '⚠️'
+            };
+            
+            const typeAdvice = {
+                'guanyin': '观音菩萨慈悲为怀，会指引你找到答案。',
+                'guandi': '关帝爷忠诚正义，会护佑你渡过难关。',
+                'yuelao': '月老红线牵引，有缘人自会相遇。',
+                'tumigong': '土地公护佑一方，风调雨顺，平安吉祥。',
+                'huangdaxian': '黄大仙指点迷津，趋吉避凶，化险为夷。',
+                'wenchang': '文昌帝君庇佑，学业进步，金榜题名。',
+                'caishen': '财神眷顾，财源广进，金玉满堂。',
+                'taishui': '太岁年宜静不宜动，化解冲煞，平安度过。'
+            };
+            
+            const emoji = levelEmoji[fortune.level] || '🌟';
+            const advice = typeAdvice[fortune.type] || '神明庇佑。';
+            
+            return `🎋 ${fortune.title}\n\n签级：${fortune.level} ${emoji}\n\n📜 签诗：\n${fortune.poem}\n\n💡 MiniMax AI 智能解读：\n${miniMaxResult.interpretation || miniMaxResult}\n\n🙏 ${advice}\n\n📋 ${miniMaxResult.shiYue || ''}\n📋 ${miniMaxResult.xianJi || ''}\n📖 ${miniMaxResult.dianGu || ''}`;
+        }
     }
+    
+    // 备用：使用 OpenAI API
+    if (OPENAI_BASE_URL && OPENAI_API_KEY) {
+        try {
+            return await callOpenAIInterpretation(fortune, userQuestion);
+        } catch (e) {
+            console.error('[AI解签] OpenAI 调用失败:', e.message);
+        }
+    }
+    
+    // 最后备用：使用内置解签
+    console.log('[AI解签] 使用内置解签');
+    return getBuiltinInterpretation(fortune);
+}
 
+async function callOpenAIInterpretation(fortune, userQuestion) {
     const prompt = `你是一位精通东方玄学的AI解签大师。用户抽到了以下签诗：
 
 签文：${fortune.title}
@@ -195,7 +329,7 @@ ${userQuestion ? `用户求问：${userQuestion}` : '（用户未指定求问事
 
 用温柔、鼓励的语气，控制在200字以内。`;
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
         const data = JSON.stringify({
             model: OPENAI_MODEL,
             messages: [
@@ -206,13 +340,10 @@ ${userQuestion ? `用户求问：${userQuestion}` : '（用户未指定求问事
             temperature: 0.8
         });
 
-        // 解析自定义API URL
         const urlMatch = OPENAI_BASE_URL.match(/^(?:https?:\/\/)?([^:/]+)(?::(\d+))?/);
         const hostname = urlMatch ? urlMatch[1] : '69.5.20.196';
         const port = urlMatch && urlMatch[2] ? parseInt(urlMatch[2]) : 8080;
         const isHttps = OPENAI_BASE_URL.startsWith('https');
-        
-        console.log('[AI解签] 发起请求:', { hostname, port, isHttps, model: OPENAI_MODEL });
         
         const options = {
             hostname: hostname,
@@ -231,28 +362,27 @@ ${userQuestion ? `用户求问：${userQuestion}` : '（用户未指定求问事
             let body = '';
             res.on('data', chunk => body += chunk);
             res.on('end', () => {
-                console.log('[AI解签] 响应状态:', res.statusCode, 'body长度:', body.length);
                 try {
                     const json = JSON.parse(body);
                     if (json.choices && json.choices[0] && json.choices[0].message) {
-                        console.log('[AI解签] 成功!');
                         resolve(json.choices[0].message.content);
                     } else if (json.error) {
-                        console.error('[AI解签] API错误:', json.error.code, json.error.message);
-                        // API错误时使用内置解签
-                        resolve(getBuiltinInterpretation(fortune));
+                        reject(new Error(json.error.message));
                     } else {
-                        console.error('[AI解签] 未知响应格式, body:', body.substring(0, 500));
-                        // 未知格式时使用内置解签
-                        resolve(getBuiltinInterpretation(fortune));
+                        reject(new Error('未知响应格式'));
                     }
                 } catch (e) {
-                    console.error('[AI解签] JSON解析失败:', e.message, 'body:', body.substring(0, 500));
-                    // 解析错误时使用内置解签
-                    resolve(getBuiltinInterpretation(fortune));
+                    reject(e);
                 }
             });
         });
+
+        req.on('error', reject);
+        req.on('timeout', () => { req.destroy(); reject(new Error('请求超时')); });
+        req.write(data);
+        req.end();
+    });
+}
 
         req.on('error', (e) => {
             console.error('[AI解签] 请求错误:', e.message);
@@ -560,28 +690,57 @@ app.get('/admin', (req, res) => {
 });
 
 // ========================================
-// 用户积分管理 API
+// 用户数据管理（持久化）
 // ========================================
 
-// 简单的内存存储（生产环境应使用数据库）
-const userCredits = new Map();
+const USERS_FILE = path.join(__dirname, 'data', 'users.json');
 
-// 初始化默认积分
-function getUserCredits(userId) {
-    if (!userCredits.has(userId)) {
-        userCredits.set(userId, {
-            freeDraws: 3,
-            aiUses: 1,
-            totalDraws: 0
-        });
+function initUsersFile() {
+    const dir = path.dirname(USERS_FILE);
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
     }
-    return userCredits.get(userId);
+    if (!fs.existsSync(USERS_FILE)) {
+        fs.writeFileSync(USERS_FILE, JSON.stringify({ users: {}, defaultTimes: 3 }, null, 2));
+    }
 }
+
+function getUsersData() {
+    initUsersFile();
+    try {
+        return JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
+    } catch (e) {
+        return { users: {}, defaultTimes: 3 };
+    }
+}
+
+function saveUsersData(data) {
+    fs.writeFileSync(USERS_FILE, JSON.stringify(data, null, 2));
+}
+
+function getOrCreateUser(userId) {
+    const data = getUsersData();
+    if (!data.users[userId]) {
+        data.users[userId] = {
+            freeDraws: data.defaultTimes,
+            aiUses: 1,
+            totalDraws: 0,
+            createdAt: new Date().toISOString(),
+            lastDrawAt: null
+        };
+        saveUsersData(data);
+    }
+    return data.users[userId];
+}
+
+// ========================================
+// 用户积分管理 API（持久化版本）
+// ========================================
 
 // 获取用户积分
 app.get('/api/credits/:userId', (req, res) => {
     const userId = req.params.userId;
-    const credits = getUserCredits(userId);
+    const credits = getOrCreateUser(userId);
     res.json({
         success: true,
         userId: userId,
@@ -589,8 +748,44 @@ app.get('/api/credits/:userId', (req, res) => {
     });
 });
 
-// 管理员设置用户积分 (通过查询参数)
-app.post('/api/credits/:userId', (req, res) => {
+// 使用抽签次数
+app.post('/api/credits/:userId/draw', (req, res) => {
+    const userId = req.params.userId;
+    const data = getUsersData();
+    
+    let user = data.users[userId];
+    if (!user) {
+        user = {
+            freeDraws: data.defaultTimes,
+            aiUses: 1,
+            totalDraws: 0,
+            createdAt: new Date().toISOString(),
+            lastDrawAt: null
+        };
+        data.users[userId] = user;
+    }
+    
+    if (user.freeDraws <= 0) {
+        return res.json({
+            success: false,
+            error: '抽签次数已用完',
+            credits: user
+        });
+    }
+    
+    user.freeDraws -= 1;
+    user.totalDraws += 1;
+    user.lastDrawAt = new Date().toISOString();
+    saveUsersData(data);
+    
+    res.json({
+        success: true,
+        credits: user
+    });
+});
+
+// 管理员设置用户积分
+app.post('/api/admin/credits/:userId', (req, res) => {
     const userId = req.params.userId;
     const { freeDraws, aiUses, action, adminKey } = req.body;
     
@@ -600,51 +795,81 @@ app.post('/api/credits/:userId', (req, res) => {
         return res.status(403).json({ error: '无权限', code: 'FORBIDDEN' });
     }
     
-    const credits = getUserCredits(userId);
+    const data = getUsersData();
+    let user = data.users[userId];
+    
+    if (!user) {
+        user = {
+            freeDraws: data.defaultTimes,
+            aiUses: 1,
+            totalDraws: 0,
+            createdAt: new Date().toISOString(),
+            lastDrawAt: null
+        };
+        data.users[userId] = user;
+    }
     
     if (action === 'add') {
-        // 增加积分
-        if (typeof freeDraws === 'number') credits.freeDraws += freeDraws;
-        if (typeof aiUses === 'number') credits.aiUses += aiUses;
-        res.json({
-            success: true,
-            message: '积分已增加',
-            credits: credits
-        });
+        if (typeof freeDraws === 'number') user.freeDraws += freeDraws;
+        if (typeof aiUses === 'number') user.aiUses += aiUses;
+        res.json({ success: true, message: '积分已增加', credits: user });
     } else if (action === 'set') {
-        // 设置积分
-        if (typeof freeDraws === 'number') credits.freeDraws = freeDraws;
-        if (typeof aiUses === 'number') credits.aiUses = aiUses;
-        res.json({
-            success: true,
-            message: '积分已设置',
-            credits: credits
-        });
+        if (typeof freeDraws === 'number') user.freeDraws = freeDraws;
+        if (typeof aiUses === 'number') user.aiUses = aiUses;
+        res.json({ success: true, message: '积分已设置', credits: user });
     } else if (action === 'reset') {
-        // 重置为默认值
-        credits.freeDraws = 3;
-        credits.aiUses = 1;
-        res.json({
-            success: true,
-            message: '积分已重置',
-            credits: credits
-        });
+        user.freeDraws = data.defaultTimes;
+        user.aiUses = 1;
+        res.json({ success: true, message: '积分已重置', credits: user });
     } else if (action === 'deduct') {
-        // 扣减积分
-        if (typeof freeDraws === 'number' && credits.freeDraws >= freeDraws) {
-            credits.freeDraws -= freeDraws;
-        }
-        if (typeof aiUses === 'number' && credits.aiUses >= aiUses) {
-            credits.aiUses -= aiUses;
-        }
-        res.json({
-            success: true,
-            message: '积分已扣减',
-            credits: credits
-        });
+        if (typeof freeDraws === 'number' && user.freeDraws >= freeDraws) user.freeDraws -= freeDraws;
+        if (typeof aiUses === 'number' && user.aiUses >= aiUses) user.aiUses -= aiUses;
+        res.json({ success: true, message: '积分已扣减', credits: user });
     } else {
-        res.status(400).json({ error: '未知操作', code: 'INVALID_ACTION' });
+        return res.status(400).json({ error: '未知操作', code: 'INVALID_ACTION' });
     }
+    
+    saveUsersData(data);
+});
+
+// 获取所有用户（管理员）
+app.get('/api/admin/users', (req, res) => {
+    const data = getUsersData();
+    const usersList = Object.entries(data.users).map(([id, info]) => ({
+        userId: id,
+        freeDraws: info.freeDraws,
+        aiUses: info.aiUses,
+        totalDraws: info.totalDraws,
+        createdAt: info.createdAt,
+        lastDrawAt: info.lastDrawAt
+    }));
+    
+    res.json({
+        success: true,
+        users: usersList,
+        total: usersList.length,
+        defaultTimes: data.defaultTimes
+    });
+});
+
+// 设置默认次数
+app.post('/api/admin/default-times', (req, res) => {
+    const { times, adminKey } = req.body;
+    
+    const ADMIN_KEY = process.env.ADMIN_KEY || 'admin123';
+    if (adminKey !== ADMIN_KEY) {
+        return res.status(403).json({ error: '无权限', code: 'FORBIDDEN' });
+    }
+    
+    if (typeof times !== 'number' || times < 0) {
+        return res.status(400).json({ success: false, error: '次数必须是大于等于0的数字' });
+    }
+    
+    const data = getUsersData();
+    data.defaultTimes = times;
+    saveUsersData(data);
+    
+    res.json({ success: true, defaultTimes: times });
 });
 
 // ========================================

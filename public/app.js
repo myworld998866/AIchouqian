@@ -20,11 +20,80 @@
             isNewUser: true,
             dailyChecked: false,
             lastVisitDate: null,
-            drawHistory: []
+            drawHistory: [],
+            userId: null
         },
         dailyFortune: null,
         dailyRating: null
     };
+
+    // ========================================
+    // 获取用户 ID
+    // ========================================
+    function getUserId() {
+        if (AppState.userData.userId) return AppState.userData.userId;
+        
+        if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+            AppState.userData.userId = tg.initDataUnsafe.user.id;
+        } else {
+            AppState.userData.userId = 'test_' + Math.random().toString(36).substr(2, 9);
+        }
+        
+        return AppState.userData.userId;
+    }
+
+    // ========================================
+    // 从服务器加载用户数据
+    // ========================================
+    async function loadUserCreditsFromServer() {
+        try {
+            const userId = getUserId();
+            const response = await fetch(`${API_BASE}/api/credits/${userId}`);
+            const data = await response.json();
+            if (data.success && data.credits) {
+                AppState.userData.freeDraws = data.credits.freeDraws;
+                AppState.userData.aiUses = data.credits.aiUses;
+                AppState.userData.totalDraws = data.credits.totalDraws;
+            }
+        } catch (error) {
+            console.error('加载用户积分失败:', error);
+        }
+    }
+
+    // 使用抽签次数
+    async function useDrawCredit() {
+        try {
+            const userId = getUserId();
+            const response = await fetch(`${API_BASE}/api/credits/${userId}/draw`, {
+                method: 'POST'
+            });
+            const data = await response.json();
+            
+            if (data.success && data.credits) {
+                AppState.userData.freeDraws = data.credits.freeDraws;
+                AppState.userData.totalDraws = data.credits.totalDraws;
+                return true;
+            } else if (data.success === false && data.error) {
+                return false;
+            }
+            
+            // 如果 API 失败，fallback 到本地逻辑
+            if (AppState.userData.freeDraws > 0) {
+                AppState.userData.freeDraws--;
+                AppState.userData.totalDraws++;
+                return true;
+            }
+            return false;
+        } catch (error) {
+            // API 失败时使用本地逻辑
+            if (AppState.userData.freeDraws > 0) {
+                AppState.userData.freeDraws--;
+                AppState.userData.totalDraws++;
+                return true;
+            }
+            return false;
+        }
+    }
 
     // ========================================
     // 常量
@@ -282,6 +351,15 @@
                 return;
             }
             
+            // 先检查服务器端次数
+            await loadUserCreditsFromServer();
+            
+            if (AppState.userData.freeDraws <= 0) {
+                this.showScreen('ad-screen');
+                this.startAdTimer();
+                return;
+            }
+            
             const drawBtn = document.getElementById('draw-btn');
             const drawingContainer = document.querySelector('.drawing-container');
             
@@ -300,6 +378,18 @@
             drawingContainer.classList.remove('shaking');
             this.showLoading('抽取中...');
             
+            // 调用服务器扣减次数
+            const canDraw = await useDrawCredit();
+            if (!canDraw) {
+                this.hideLoading();
+                this.showToast('抽签次数已用完');
+                drawBtn.disabled = false;
+                AppState.isDrawing = false;
+                this.showScreen('ad-screen');
+                this.startAdTimer();
+                return;
+            }
+            
             try {
                 const result = await API.drawFortune(AppState.currentFortuneType.id);
                 
@@ -307,9 +397,7 @@
 
                 if (result && result.success && result.fortune) {
                     AppState.currentFortune = result.fortune;
-                    if (Storage.useFreeDraw()) {
-                        this.updateStats();
-                    }
+                    this.updateStats();
                     this.showFortuneResult(result);
                 } else {
                     this.showToast('抽签出了点问题，请重试');
@@ -656,13 +744,15 @@
         Storage.load();
         bindEvents();
         
+        // 从服务器加载用户积分
+        await loadUserCreditsFromServer();
+        UI.updateStats();
+        
         // 加载签种
         const fortuneTypes = await API.getFortuneTypes();
         if (fortuneTypes.length > 0) {
             UI.renderFortuneTypes(fortuneTypes);
         }
-        
-        UI.updateStats();
         
         // 新手引导
         setTimeout(() => UI.showGuide(), 800);

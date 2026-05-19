@@ -1,0 +1,22 @@
+# AI好签项目配置
+
+## 项目信息
+- **项目名称**: AI好签
+- **本地路径**: /Users/myworld/.openclaw/workspace/newAIchouqian
+- **仓库地址**: https://github.com/myspacehub/AIchouqian
+- **Git remote**: git@github.com:myspacehub/AIchouqian.git
+
+## 部署
+- **部署平台**: 待确认
+- **访问地址**: 待确认
+
+## 常用命令
+```bash
+cd /Users/myworld/.openclaw/workspace/newAIchouqian
+git remote add origin git@github.com:myspacehub/AIchouqian.git
+git push origin main
+```
+
+## 备注
+- GitHub 用户名是 myspacehub（不是 myworld998866）
+- 使用 SSH 方式推送（git@github.com:...）
